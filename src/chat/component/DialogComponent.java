@@ -1,7 +1,7 @@
 package chat.component;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DialogComponent {
 
@@ -12,7 +12,7 @@ public class DialogComponent {
     public DialogComponent(String token, String username) {
         this.token = token;
         this.username = username;
-        this.messageHistory = new ArrayList<>();
+        this.messageHistory = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -30,7 +30,7 @@ public class DialogComponent {
      * @return List of messages
      */
     public List<String> getMessageHistory() {
-        return new ArrayList<>(messageHistory); // Return a copy for safety
+        return new CopyOnWriteArrayList<>(messageHistory); // Return a copy for safety
     }
 
     public String getUsername() {

@@ -1,6 +1,5 @@
 package chat.component;
 
-import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,13 +23,27 @@ public class ConnectionComponent {
     }
 
     /**
-     * Retrieve an existing DialogComponent for a connected client by their token.
+     * Retrieve an existing DialogComponent by the client's token.
      *
      * @param token The client's unique token
      * @return The DialogComponent instance, or null if not found
      */
     public DialogComponent getDialog(String token) {
         return dialogs.get(token);
+    }
+
+    /**
+     * Retrieve an existing DialogComponent by the client's username.
+     * This method iterates over the values in the map to find the correct DialogComponent.
+     *
+     * @param username The client's username
+     * @return The DialogComponent instance, or null if not found
+     */
+    public DialogComponent getDialogByUsername(String username) {
+        return dialogs.values().stream()
+                .filter(dialog -> dialog.getUsername().equals(username))
+                .findFirst()
+                .orElse(null);
     }
 
     /**

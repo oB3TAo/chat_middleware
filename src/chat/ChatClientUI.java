@@ -1,6 +1,7 @@
 package chat;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,6 +14,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChatClientUI extends Application {
 
@@ -22,6 +24,8 @@ public class ChatClientUI extends Application {
     private TextArea chatArea; // Display area for message history
     private TextField messageField; // Input field for sending messages
     private Timer messagePollingTimer; // Polls server for new messages
+    private int lastRetrievedMessageCount = 0; // Tracks last message index retrieved
+    private AtomicBoolean isPolling = new AtomicBoolean(false); // Prevents overlapping polling tasks
 
     public static void main(String[] args) {
         launch(args);
@@ -174,15 +178,21 @@ public class ChatClientUI extends Application {
         messagePollingTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                if (isPolling.get()) return; // Prevent overlapping tasks
+                isPolling.set(true);
                 try {
                     String[] messages = chatService.getMessages(token);
-                    if (messages != null) {
-                        for (String message : messages) {
-                            chatArea.appendText(message + "\n");
+                    if (messages != null && messages.length > lastRetrievedMessageCount) {
+                        for (int i = lastRetrievedMessageCount; i < messages.length; i++) {
+                            String message = messages[i];
+                            Platform.runLater(() -> chatArea.appendText(message + "\n"));
                         }
+                        lastRetrievedMessageCount = messages.length; // Update count
                     }
                 } catch (RemoteException e) {
                     System.out.println("Error polling messages: " + e.getMessage());
+                } finally {
+                    isPolling.set(false);
                 }
             }
         }, 0, 2000);

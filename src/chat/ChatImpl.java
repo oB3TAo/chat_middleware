@@ -1,19 +1,21 @@
 package chat;
 
+import chat.component.ConnectionComponent;
+import chat.component.DialogComponent;
+
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 public class ChatImpl extends UnicastRemoteObject implements Chat {
-    private HashMap<String, String> userPasswords = new HashMap<>(); // Store username and hashed password
-    private HashMap<String, String> activeTokens = new HashMap<>(); // Store token and corresponding username
-    private HashMap<String, List<String>> userMessages = new HashMap<>(); // Store messages for each user
-    private List<String> connectedClients = new ArrayList<>(); // Track connected clients
+
+    private final HashMap<String, String> userPasswords = new HashMap<>();
+    private final HashMap<String, String> activeTokens = new HashMap<>();
+    private final ConnectionComponent connectionComponent = new ConnectionComponent();
 
     public ChatImpl() throws RemoteException {
         super();
@@ -22,10 +24,9 @@ public class ChatImpl extends UnicastRemoteObject implements Chat {
     @Override
     public String register(String pseudo, String password) throws RemoteException {
         if (userPasswords.containsKey(pseudo)) {
-            return "User already exists"; // User already exists
+            return "User already exists";
         }
         userPasswords.put(pseudo, hashPassword(password));
-        userMessages.put(pseudo, new ArrayList<>()); // Initialize message list for new user
         return "User registered successfully";
     }
 
@@ -35,69 +36,59 @@ public class ChatImpl extends UnicastRemoteObject implements Chat {
         if (storedHash != null && storedHash.equals(hashPassword(password))) {
             String token = UUID.randomUUID().toString();
             activeTokens.put(token, pseudo);
-            return token; // Return the token to the client
+            connectionComponent.createDialog(token, pseudo); // Create a new DialogComponent
+            return token;
         }
-        return null; // Return null if login fails
+        return null;
     }
-
 
     @Override
     public void connect(String token) throws RemoteException {
-        String user = activeTokens.get(token);
-        if (user == null) {
+        if (!activeTokens.containsKey(token)) {
             throw new RemoteException("Invalid token");
-        }
-        if (!connectedClients.contains(user)) {
-            connectedClients.add(user); // Add user to connected clients
         }
     }
 
     @Override
     public void disconnect(String token) throws RemoteException {
-        String user = activeTokens.remove(token); // Remove token and retrieve user
-        if (user != null) {
-            connectedClients.remove(user); // Remove user from connected clients
-        }
+        activeTokens.remove(token);
+        connectionComponent.removeDialog(token); // Remove dialog component on disconnect
     }
 
     @Override
     public String[] getClients(String token) throws RemoteException {
-        String user = activeTokens.get(token);
-        if (user == null) {
-            throw new RemoteException("Invalid token");
-        }
-        return connectedClients.toArray(new String[0]); // Return list of connected clients
+        return activeTokens.values().toArray(new String[0]);
     }
 
-    @Override
-    public void sendMessage(String token, String to, String message) throws RemoteException {
-        String from = activeTokens.get(token);
-        if (from == null) {
-            throw new RemoteException("Invalid token");
+    public void sendMessage(String token, String recipientUsername, String message) throws RemoteException {
+        String sender = activeTokens.get(token);
+        if (sender == null) {
+            throw new RemoteException("Invalid sender token");
         }
-        if (!userMessages.containsKey(to)) {
-            throw new RemoteException("Recipient does not exist");
+
+        // Find recipient's dialog by username
+        DialogComponent receiverDialog = connectionComponent.getDialogByUsername(recipientUsername);
+        if (receiverDialog == null) {
+            throw new RemoteException("Could not find recipient's dialog.");
         }
-        String formattedMessage = from + ": " + message;
-        userMessages.get(to).add(formattedMessage); // Store the message for the recipient
+
+        String formattedMessage = sender + ": " + message;
+        receiverDialog.addMessage(formattedMessage);
     }
 
     @Override
     public String[] getMessages(String token) throws RemoteException {
-        String user = activeTokens.get(token);
-        if (user == null) {
+        DialogComponent dialog = connectionComponent.getDialog(token);
+        if (dialog == null) {
             throw new RemoteException("Invalid token");
         }
-        List<String> messages = userMessages.get(user);
-        if (messages == null) {
-            return new String[0]; // No messages if user has no message list
-        }
+
+        List<String> messages = dialog.getMessageHistory();
         String[] messageArray = messages.toArray(new String[0]);
-        messages.clear(); // Clear messages after retrieval
+        System.out.println("Messages retrieved for token " + token + ": " + messageArray.length);
         return messageArray;
     }
 
-    // Hashes the password using SHA-256
     private String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
