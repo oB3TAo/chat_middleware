@@ -1,4 +1,5 @@
 module chat {
 	requires java.rmi;
-	exports chat;
+    requires javafx.controls;
+    exports chat;
 }
