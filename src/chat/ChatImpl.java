@@ -8,13 +8,16 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
+/**
+ * Implementation of the Chat interface using RMI.
+ */
 public class ChatImpl extends UnicastRemoteObject implements Chat {
 
     private final HashMap<String, String> userPasswords = new HashMap<>();
     private final HashMap<String, String> activeTokens = new HashMap<>();
+    private final HashMap<String, Receiver> connectedClients = new HashMap<>(); // Storing connected clients' receivers
     private final ConnectionComponent connectionComponent = new ConnectionComponent();
 
     public ChatImpl() throws RemoteException {
@@ -43,52 +46,71 @@ public class ChatImpl extends UnicastRemoteObject implements Chat {
     }
 
     @Override
-    public void connect(String token) throws RemoteException {
-        if (!activeTokens.containsKey(token)) {
+    public Emitter connect(String token, Receiver receiver) throws RemoteException {
+        if (!isValidToken(token)) {
             throw new RemoteException("Invalid token");
         }
-    }
 
-    @Override
-    public void disconnect(String token) throws RemoteException {
-        activeTokens.remove(token);
-        connectionComponent.removeDialog(token); // Remove dialog component on disconnect
+        String username = tokenToUsername(token);
+
+        // Store the receiver for pushing updates
+        connectedClients.put(username, receiver);
+
+        // Notify all clients about the new connection
+        broadcastClientListUpdate();
+
+        // Provide the Emitter implementation for the client
+        return new EmitterImpl(token, this);
     }
 
     @Override
     public String[] getClients(String token) throws RemoteException {
-        return activeTokens.values().toArray(new String[0]);
+        // Validate token
+        if (!isValidToken(token)) {
+            throw new RemoteException("Invalid token");
+        }
+        return connectedClients.keySet().toArray(new String[0]);
     }
 
+    @Override
     public void sendMessage(String token, String recipientUsername, String message) throws RemoteException {
-        String sender = activeTokens.get(token);
+        String sender = tokenToUsername(token);
         if (sender == null) {
             throw new RemoteException("Invalid sender token");
         }
 
-        // Find recipient's dialog by username
-        DialogComponent receiverDialog = connectionComponent.getDialogByUsername(recipientUsername);
-        if (receiverDialog == null) {
-            throw new RemoteException("Could not find recipient's dialog.");
+        // Find recipient's receiver and push the message
+        Receiver receiver = connectedClients.get(recipientUsername);
+        if (receiver == null) {
+            throw new RemoteException("Recipient not found");
         }
 
         String formattedMessage = sender + ": " + message;
-        receiverDialog.addMessage(formattedMessage);
-    }
+        receiver.receiveMessage(formattedMessage); // Push the message to the recipient
 
-    @Override
-    public String[] getMessages(String token) throws RemoteException {
+        // Add the message to the dialog history
         DialogComponent dialog = connectionComponent.getDialog(token);
-        if (dialog == null) {
-            throw new RemoteException("Invalid token");
+        if (dialog != null) {
+            dialog.addMessage(formattedMessage);
         }
-
-        List<String> messages = dialog.getMessageHistory();
-        String[] messageArray = messages.toArray(new String[0]);
-        System.out.println("Messages retrieved for token " + token + ": " + messageArray.length);
-        return messageArray;
     }
 
+    /**
+     * Broadcast updated client list to all connected clients.
+     */
+    private void broadcastClientListUpdate() throws RemoteException {
+        String[] clients = connectedClients.keySet().toArray(new String[0]);
+        for (Receiver receiver : connectedClients.values()) {
+            receiver.initClients(clients);
+        }
+    }
+
+    /**
+     * Hashes a password using SHA-256.
+     *
+     * @param password the password to hash.
+     * @return the hashed password.
+     */
     private String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -101,5 +123,25 @@ public class ChatImpl extends UnicastRemoteObject implements Chat {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Hashing error", e);
         }
+    }
+
+    /**
+     * Validates if a token exists in the active tokens.
+     *
+     * @param token the token to validate.
+     * @return true if the token is valid, false otherwise.
+     */
+    private boolean isValidToken(String token) {
+        return activeTokens.containsKey(token);
+    }
+
+    /**
+     * Retrieves the username associated with a token.
+     *
+     * @param token the token to look up.
+     * @return the username associated with the token.
+     */
+    private String tokenToUsername(String token) {
+        return activeTokens.get(token);
     }
 }
