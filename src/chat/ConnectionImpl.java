@@ -2,13 +2,15 @@ package chat;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionImpl extends UnicastRemoteObject implements Connection {
 
-    private final Map<String, String> userPasswords = new ConcurrentHashMap<>();
+    private final Map<String, String> userPasswords = new ConcurrentHashMap<>(); // Stores hashed passwords
     private final Map<String, String> tokenToUsernameMap = new ConcurrentHashMap<>();
     private final Map<String, Receiver> connectedClients = new ConcurrentHashMap<>();
 
@@ -21,17 +23,27 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
         if (userPasswords.containsKey(username)) {
             return "User already exists.";
         }
-        userPasswords.put(username, password); // Simplified; use hashing in production
-        return "User registered successfully.";
+
+        try {
+            String hashedPassword = hashPassword(password);
+            userPasswords.put(username, hashedPassword);
+            return "User registered successfully.";
+        } catch (NoSuchAlgorithmException e) {
+            throw new RemoteException("Error while hashing password.", e);
+        }
     }
 
     @Override
     public String login(String username, String password) throws RemoteException {
-        String storedPassword = userPasswords.get(username);
-        if (storedPassword != null && storedPassword.equals(password)) {
-            String token = UUID.randomUUID().toString();
-            tokenToUsernameMap.put(token, username);
-            return token;
+        String storedHashedPassword = userPasswords.get(username);
+        try {
+            if (storedHashedPassword != null && storedHashedPassword.equals(hashPassword(password))) {
+                String token = UUID.randomUUID().toString();
+                tokenToUsernameMap.put(token, username);
+                return token;
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new RemoteException("Error while hashing password.", e);
         }
         return null;
     }
@@ -93,5 +105,18 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
                 System.out.println("Failed to update client list: " + e.getMessage());
             }
         }
+    }
+
+    // Utility method to hash a password using SHA-256
+    private String hashPassword(String password) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] encodedHash = digest.digest(password.getBytes());
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : encodedHash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 }
