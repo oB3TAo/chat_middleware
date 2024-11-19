@@ -11,17 +11,17 @@ import javafx.stage.Stage;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.util.Timer;
 
 public class ChatClientUI extends Application {
 
-    private Chat chatService;
+    private Connection connectionService;
     private Emitter emitter;
     private String token;
+
     private ComboBox<String> clientList;
     private TextArea chatArea;
     private TextField messageField;
-    private Timer messagePollingTimer;
+    private Stage primaryStage;
 
     public static void main(String[] args) {
         launch(args);
@@ -29,8 +29,21 @@ public class ChatClientUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
         primaryStage.setTitle("Chat Client");
+        showLoginUI();
+        connectToServer();
+    }
 
+    private void connectToServer() {
+        try {
+            connectionService = (Connection) Naming.lookup("rmi://localhost:1099/Connection");
+        } catch (Exception e) {
+            showError("Failed to connect to server: " + e.getMessage());
+        }
+    }
+
+    private void showLoginUI() {
         TextField usernameField = new TextField();
         usernameField.setPromptText("Enter Username");
         PasswordField passwordField = new PasswordField();
@@ -38,7 +51,6 @@ public class ChatClientUI extends Application {
 
         Button loginButton = new Button("Login");
         Button registerButton = new Button("Register");
-
         Label statusLabel = new Label();
 
         loginButton.setOnAction(event -> handleLogin(usernameField.getText(), passwordField.getText(), statusLabel));
@@ -50,26 +62,16 @@ public class ChatClientUI extends Application {
         Scene loginScene = new Scene(loginLayout, 300, 200);
         primaryStage.setScene(loginScene);
         primaryStage.show();
-
-        connectToServer();
-    }
-
-    private void connectToServer() {
-        try {
-            chatService = (Chat) Naming.lookup("rmi://localhost:1099/Chat");
-        } catch (Exception e) {
-            System.out.println("Failed to connect to server: " + e.getMessage());
-        }
     }
 
     private void handleLogin(String username, String password, Label statusLabel) {
         try {
-            token = chatService.login(username, password);
+            token = connectionService.login(username, password);
             if (token != null) {
                 statusLabel.setText("Logged in successfully.");
                 ReceiverImpl receiver = new ReceiverImpl(this);
-                emitter = chatService.connect(token, receiver);
-                showChatInterface();
+                emitter = connectionService.connect(token, receiver);
+                showChatUI();
             } else {
                 statusLabel.setText("Invalid credentials.");
             }
@@ -80,17 +82,14 @@ public class ChatClientUI extends Application {
 
     private void handleRegister(String username, String password, Label statusLabel) {
         try {
-            String response = chatService.register(username, password);
+            String response = connectionService.register(username, password);
             statusLabel.setText(response);
         } catch (RemoteException e) {
             statusLabel.setText("Error: " + e.getMessage());
         }
     }
 
-    private void showChatInterface() {
-        Stage chatStage = new Stage();
-        chatStage.setTitle("Chat Interface");
-
+    private void showChatUI() {
         clientList = new ComboBox<>();
         Button refreshButton = new Button("Refresh Users");
         chatArea = new TextArea();
@@ -98,25 +97,34 @@ public class ChatClientUI extends Application {
         messageField = new TextField();
         messageField.setPromptText("Enter your message");
         Button sendButton = new Button("Send");
+        Button disconnectButton = new Button("Disconnect");
 
         refreshButton.setOnAction(event -> refreshClientList());
         sendButton.setOnAction(event -> sendMessage());
+        disconnectButton.setOnAction(event -> handleDisconnect());
 
-        VBox layout = new VBox(10, new HBox(10, clientList, refreshButton), chatArea, new HBox(10, messageField, sendButton));
-        layout.setPadding(new Insets(10));
-        layout.setAlignment(Pos.CENTER);
+        HBox userControls = new HBox(10, clientList, refreshButton, disconnectButton);
+        userControls.setAlignment(Pos.CENTER);
 
-        chatStage.setScene(new Scene(layout, 400, 400));
-        chatStage.show();
+        VBox chatLayout = new VBox(10, userControls, chatArea, new HBox(10, messageField, sendButton));
+        chatLayout.setPadding(new Insets(10));
+        chatLayout.setAlignment(Pos.CENTER);
+
+        Scene chatScene = new Scene(chatLayout, 400, 500);
+        Platform.runLater(() -> {
+            primaryStage.setScene(chatScene);
+            primaryStage.setResizable(false);
+            primaryStage.show();
+        });
 
         refreshClientList();
     }
 
     private void refreshClientList() {
         try {
-            clientList.getItems().setAll(chatService.getClients(token));
+            clientList.getItems().setAll(connectionService.getClients(token));
         } catch (RemoteException e) {
-            System.out.println("Error refreshing client list: " + e.getMessage());
+            showError("Error refreshing client list: " + e.getMessage());
         }
     }
 
@@ -129,8 +137,21 @@ public class ChatClientUI extends Application {
                 chatArea.appendText("You: " + message + "\n");
                 messageField.clear();
             } catch (RemoteException e) {
-                System.out.println("Error sending message: " + e.getMessage());
+                showError("Error sending message: " + e.getMessage());
             }
+        } else {
+            showError("Recipient or message is empty.");
+        }
+    }
+
+    private void handleDisconnect() {
+        try {
+            connectionService.disconnect(token);
+            token = null;
+            emitter = null;
+            Platform.runLater(this::showLoginUI);
+        } catch (RemoteException e) {
+            showError("Error disconnecting: " + e.getMessage());
         }
     }
 
@@ -148,5 +169,14 @@ public class ChatClientUI extends Application {
 
     public void removeClient(String client) {
         Platform.runLater(() -> clientList.getItems().remove(client));
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
     }
 }

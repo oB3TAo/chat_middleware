@@ -11,4 +11,6 @@ public interface Receiver extends Remote {
     void addClient(String client) throws RemoteException;
 
     void remClient(String client) throws RemoteException;
+
+    String[] getClients(String token) throws RemoteException;
 }

@@ -4,16 +4,18 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 public class EmitterImpl extends UnicastRemoteObject implements Emitter {
-    private final String senderToken;
-    private final ChatImpl chatService;
 
-    public EmitterImpl(String senderToken, ChatImpl chatService) throws RemoteException {
+    private final String senderToken;
+    private final ConnectionImpl connectionService;
+
+    public EmitterImpl(String senderToken, ConnectionImpl connectionService) throws RemoteException {
+        super();
         this.senderToken = senderToken;
-        this.chatService = chatService;
+        this.connectionService = connectionService;
     }
 
     @Override
     public void sendMessage(String recipient, String message) throws RemoteException {
-        chatService.sendMessage(senderToken, recipient, message);
+        connectionService.sendMessage(senderToken, recipient, message);
     }
 }
