@@ -91,7 +91,6 @@ public class ChatClientUI extends Application {
 
     private void showChatUI() {
         clientList = new ComboBox<>();
-        Button refreshButton = new Button("Refresh Users");
         chatArea = new TextArea();
         chatArea.setEditable(false);
         messageField = new TextField();
@@ -99,11 +98,10 @@ public class ChatClientUI extends Application {
         Button sendButton = new Button("Send");
         Button disconnectButton = new Button("Disconnect");
 
-        refreshButton.setOnAction(event -> refreshClientList());
         sendButton.setOnAction(event -> sendMessage());
         disconnectButton.setOnAction(event -> handleDisconnect());
 
-        HBox userControls = new HBox(10, clientList, refreshButton, disconnectButton);
+        HBox userControls = new HBox(10, clientList, disconnectButton);
         userControls.setAlignment(Pos.CENTER);
 
         VBox chatLayout = new VBox(10, userControls, chatArea, new HBox(10, messageField, sendButton));
@@ -116,16 +114,6 @@ public class ChatClientUI extends Application {
             primaryStage.setResizable(false);
             primaryStage.show();
         });
-
-        refreshClientList();
-    }
-
-    private void refreshClientList() {
-        try {
-            clientList.getItems().setAll(connectionService.getClients(token));
-        } catch (RemoteException e) {
-            showError("Error refreshing client list: " + e.getMessage());
-        }
     }
 
     private void sendMessage() {

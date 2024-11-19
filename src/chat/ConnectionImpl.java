@@ -55,10 +55,26 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
             throw new RemoteException("Invalid token.");
         }
 
+        // Add client to connected clients
         connectedClients.put(username, receiver);
-        broadcastClientListUpdate();
 
-        return new EmitterImpl(token, this);
+        // Notify all connected clients about the new user
+        for (Map.Entry<String, Receiver> entry : connectedClients.entrySet()) {
+            try {
+                // Notify existing clients about the newly connected user
+                if (!entry.getKey().equals(username)) {
+                    entry.getValue().addClient(username);
+                }
+            } catch (RemoteException e) {
+                System.out.println("Failed to notify client about new connection: " + e.getMessage());
+            }
+        }
+
+        // Send the full list of connected clients to the new user
+        receiver.initClients(connectedClients.keySet().toArray(new String[0]));
+
+        // Return a new EmitterImpl instance, passing the activeClients and tokenToUsernameMap
+        return new EmitterImpl(token, connectedClients, tokenToUsernameMap);
     }
 
     @Override
@@ -67,43 +83,17 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
         if (username != null) {
             connectedClients.remove(username);
             tokenToUsernameMap.remove(token);
-            broadcastClientListUpdate();
-        } else {
-            throw new RemoteException("Invalid token.");
-        }
-    }
 
-    @Override
-    public String[] getClients(String token) throws RemoteException {
-        String username = tokenToUsernameMap.get(token);
-        if (username == null) {
-            throw new RemoteException("Invalid token.");
-        }
-        return connectedClients.keySet().toArray(new String[0]);
-    }
-
-    public void sendMessage(String senderToken, String recipient, String message) throws RemoteException {
-        String sender = tokenToUsernameMap.get(senderToken);
-        if (sender == null) {
-            throw new RemoteException("Invalid sender token.");
-        }
-
-        Receiver receiver = connectedClients.get(recipient);
-        if (receiver != null) {
-            receiver.receiveMessage(sender + ": " + message);
-        } else {
-            throw new RemoteException("Recipient not found.");
-        }
-    }
-
-    private void broadcastClientListUpdate() {
-        String[] clients = connectedClients.keySet().toArray(new String[0]);
-        for (Receiver receiver : connectedClients.values()) {
-            try {
-                receiver.initClients(clients);
-            } catch (RemoteException e) {
-                System.out.println("Failed to update client list: " + e.getMessage());
+            // Notify all connected clients about the removed user
+            for (Receiver receiver : connectedClients.values()) {
+                try {
+                    receiver.remClient(username);
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify client about disconnection: " + e.getMessage());
+                }
             }
+        } else {
+            throw new RemoteException("Invalid token.");
         }
     }
 

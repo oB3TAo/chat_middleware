@@ -11,6 +11,4 @@ public interface Connection extends Remote {
     String register(String username, String password) throws RemoteException;
 
     String login(String username, String password) throws RemoteException;
-
-    String[] getClients(String token) throws RemoteException;
 }

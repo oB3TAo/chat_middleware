@@ -31,9 +31,4 @@ public class ReceiverImpl extends UnicastRemoteObject implements Receiver {
     public void remClient(String client) throws RemoteException {
         clientUI.removeClient(client);
     }
-
-    @Override
-    public String[] getClients(String token) throws RemoteException {
-        throw new UnsupportedOperationException("ReceiverImpl does not manage clients directly.");
-    }
 }
