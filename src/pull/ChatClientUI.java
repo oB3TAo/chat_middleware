@@ -1,4 +1,4 @@
-package chat;
+package pull;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -49,19 +49,24 @@ public class ChatClientUI extends Application {
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Enter Password");
 
-        Button loginButton = new Button("Login");
-        Button registerButton = new Button("Register");
-        Label statusLabel = new Label();
-
-        loginButton.setOnAction(event -> handleLogin(usernameField.getText(), passwordField.getText(), statusLabel));
-        registerButton.setOnAction(event -> handleRegister(usernameField.getText(), passwordField.getText(), statusLabel));
-
-        VBox loginLayout = new VBox(10, usernameField, passwordField, loginButton, registerButton, statusLabel);
-        loginLayout.setAlignment(Pos.CENTER);
+        VBox loginLayout = getVBox(usernameField, passwordField);
 
         Scene loginScene = new Scene(loginLayout, 300, 200);
         primaryStage.setScene(loginScene);
         primaryStage.show();
+    }
+
+    private VBox getVBox(TextField usernameField, PasswordField passwordField) {
+        Button loginButton = new Button("Login");
+        Button registerButton = new Button("Register");
+        Label statusLabel = new Label();
+
+        loginButton.setOnAction(_ -> handleLogin(usernameField.getText(), passwordField.getText(), statusLabel));
+        registerButton.setOnAction(_ -> handleRegister(usernameField.getText(), passwordField.getText(), statusLabel));
+
+        VBox loginLayout = new VBox(10, usernameField, passwordField, loginButton, registerButton, statusLabel);
+        loginLayout.setAlignment(Pos.CENTER);
+        return loginLayout;
     }
 
     private void handleLogin(String username, String password, Label statusLabel) {
@@ -98,8 +103,8 @@ public class ChatClientUI extends Application {
         Button sendButton = new Button("Send");
         Button disconnectButton = new Button("Disconnect");
 
-        sendButton.setOnAction(event -> sendMessage());
-        disconnectButton.setOnAction(event -> handleDisconnect());
+        sendButton.setOnAction(_ -> sendMessage());
+        disconnectButton.setOnAction(_ -> handleDisconnect());
 
         HBox userControls = new HBox(10, clientList, disconnectButton);
         userControls.setAlignment(Pos.CENTER);

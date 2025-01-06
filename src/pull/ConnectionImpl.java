@@ -1,4 +1,4 @@
-package chat;
+package pull;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -55,13 +55,10 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
             throw new RemoteException("Invalid token.");
         }
 
-        // Add client to connected clients
         connectedClients.put(username, receiver);
 
-        // Notify all connected clients about the new user
         for (Map.Entry<String, Receiver> entry : connectedClients.entrySet()) {
             try {
-                // Notify existing clients about the newly connected user
                 if (!entry.getKey().equals(username)) {
                     entry.getValue().addClient(username);
                 }
@@ -70,10 +67,8 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
             }
         }
 
-        // Send the full list of connected clients to the new user
         receiver.initClients(connectedClients.keySet().toArray(new String[0]));
 
-        // Return a new EmitterImpl instance, passing the activeClients and tokenToUsernameMap
         return new EmitterImpl(token, connectedClients, tokenToUsernameMap);
     }
 
@@ -84,7 +79,6 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
             connectedClients.remove(username);
             tokenToUsernameMap.remove(token);
 
-            // Notify all connected clients about the removed user
             for (Receiver receiver : connectedClients.values()) {
                 try {
                     receiver.remClient(username);
@@ -97,7 +91,6 @@ public class ConnectionImpl extends UnicastRemoteObject implements Connection {
         }
     }
 
-    // Utility method to hash a password using SHA-256
     private String hashPassword(String password) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] encodedHash = digest.digest(password.getBytes());

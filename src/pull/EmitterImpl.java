@@ -1,4 +1,4 @@
-package chat;
+package pull;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -19,16 +19,13 @@ public class EmitterImpl extends UnicastRemoteObject implements Emitter {
 
     @Override
     public void sendMessage(String recipient, String message) throws RemoteException {
-        // Retrieve sender's username from their token
         String senderUsername = tokenToUsernameMap.get(senderToken);
         if (senderUsername == null) {
             throw new RemoteException("Invalid sender token.");
         }
 
-        // Ensure the recipient exists
         Receiver recipientReceiver = activeClients.get(recipient);
         if (recipientReceiver != null) {
-            // Format and send the message
             String formattedMessage = String.format("[%s]: %s", senderUsername, message);
             recipientReceiver.receiveMessage(formattedMessage);
         } else {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="peertopeer.ui.LoginController" spacing="10" alignment="CENTER">
+    <Label text="Welcome to Peer-to-Peer Chat" />
+    <TextField fx:id="usernameField" promptText="Username" />
+    <PasswordField fx:id="passwordField" promptText="Password" />
+    <Button text="Login" onAction="#login" />
+    <Button text="Register" onAction="#register" />
+    <Label fx:id="errorLabel" textFill="red" />
+</VBox>

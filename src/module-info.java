@@ -1,5 +1,9 @@
-module chat {
+module pull {
 	requires java.rmi;
     requires javafx.controls;
-    exports chat;
+    requires javafx.fxml;
+    exports pull;
+    exports peertopeer;
+    exports peertopeer.ui;
+    opens peertopeer.ui to javafx.fxml;
 }

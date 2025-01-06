@@ -1,4 +1,4 @@
-package chat;
+package pull;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -8,10 +8,8 @@ import java.rmi.registry.LocateRegistry;
 public class Server {
 	public static void main(String[] args) {
 		try {
-			// Create and start the RMI registry
 			LocateRegistry.createRegistry(1099);
 
-			// Create and bind the Connection implementation
 			ConnectionImpl connectionService = new ConnectionImpl();
 			Naming.rebind("Connection", connectionService);
 
