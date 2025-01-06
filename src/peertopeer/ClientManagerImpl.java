@@ -32,6 +32,6 @@ public class ClientManagerImpl extends UnicastRemoteObject implements ClientMana
 
     @Override
     public List<String> getOnlineClients() throws RemoteException {
-        return new ArrayList<>(onlineClients); // Return a copy to avoid concurrency issues
+        return new ArrayList<>(onlineClients);
     }
 }

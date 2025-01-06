@@ -9,9 +9,9 @@ import java.util.Map;
 
 public class ServerConnectionImpl extends UnicastRemoteObject implements ServerConnection {
 
-    private final Map<String, String> users = new HashMap<>(); // Stores username -> hashedPassword
-    private final Map<String, ClientConnection> onlineClients = new HashMap<>(); // Stores username -> ClientConnection
-    private final Map<String, ClientManager> clientManagers = new HashMap<>(); // Stores username -> ClientManager
+    private final Map<String, String> users = new HashMap<>();
+    private final Map<String, ClientConnection> onlineClients = new HashMap<>();
+    private final Map<String, ClientManager> clientManagers = new HashMap<>();
 
     public ServerConnectionImpl() throws RemoteException {
         super();
@@ -41,18 +41,15 @@ public class ServerConnectionImpl extends UnicastRemoteObject implements ServerC
             throw new RemoteException("User already connected.");
         }
 
-        // Add the client to the lists
         onlineClients.put(username, clientConnection);
         clientManagers.put(username, clientManager);
 
-        // Notify all clients of the new user
         for (Map.Entry<String, ClientManager> entry : clientManagers.entrySet()) {
             if (!entry.getKey().equals(username)) {
                 entry.getValue().addClient(username);
             }
         }
 
-        // Provide the newly connected client with the list of online users
         clientManager.initClients(onlineClients.keySet().toArray(new String[0]));
 
         System.out.println("Client connected: " + username);
@@ -67,7 +64,6 @@ public class ServerConnectionImpl extends UnicastRemoteObject implements ServerC
         onlineClients.remove(username);
         clientManagers.remove(username);
 
-        // Notify all clients of the disconnection
         for (Map.Entry<String, ClientManager> entry : clientManagers.entrySet()) {
             entry.getValue().removeClient(username);
         }
@@ -83,7 +79,6 @@ public class ServerConnectionImpl extends UnicastRemoteObject implements ServerC
         return onlineClients.get(username);
     }
 
-    // Optional: Add a method to fetch all online users
     @Override
     public synchronized List<String> getOnlineClients() throws RemoteException {
         return new ArrayList<>(onlineClients.keySet());

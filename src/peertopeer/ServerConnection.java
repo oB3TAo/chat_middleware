@@ -10,5 +10,5 @@ public interface ServerConnection extends Remote {
     void connect(String username, ClientConnection clientConnection, ClientManager clientManager) throws RemoteException;
     void disconnect(String username) throws RemoteException;
     ClientConnection getClient(String username) throws RemoteException;
-    List<String> getOnlineClients() throws RemoteException; // Example additional method
+    List<String> getOnlineClients() throws RemoteException;
 }

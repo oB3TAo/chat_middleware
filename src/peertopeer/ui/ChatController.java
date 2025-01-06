@@ -32,7 +32,6 @@ public class ChatController {
         this.username = username;
         this.serverConnection = serverConnection;
 
-        // Initialize the user's message box
         try {
             this.localMessageBox = new MessageBoxImpl(username, message ->
                     Platform.runLater(() -> chatArea.appendText("From " + message + "\n")));
@@ -45,7 +44,6 @@ public class ChatController {
 
     private void loadOnlineUsers() {
         try {
-            // Fetch online clients from the server
             List<String> onlineUsers = serverConnection.getOnlineClients();
             Platform.runLater(() -> onlineUsersList.getItems().setAll(onlineUsers));
         } catch (RemoteException e) {
@@ -56,10 +54,9 @@ public class ChatController {
     @FXML
     private void disconnect() {
         try {
-            // Notify the server about disconnection
             serverConnection.disconnect(username);
             chatArea.appendText("Disconnected from the server.\n");
-            Platform.exit(); // Exit the application
+            Platform.exit();
         } catch (RemoteException e) {
             chatArea.appendText("Failed to disconnect: " + e.getMessage() + "\n");
         }
@@ -76,13 +73,9 @@ public class ChatController {
         }
 
         try {
-            // Fetch the recipient's ClientConnection from the server
             ClientConnection recipientConnection = serverConnection.getClient(selectedUser);
-
-            // Establish a message connection
             MessageBox recipientMessageBox = recipientConnection.connect(username, localMessageBox);
 
-            // Send the message
             recipientMessageBox.receive(message);
 
             chatArea.appendText("To " + selectedUser + ": " + message + "\n");

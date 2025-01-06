@@ -8,10 +8,8 @@ import java.rmi.registry.LocateRegistry;
 public class ChatServer {
     public static void main(String[] args) {
         try {
-            // Start the RMI registry on port 1099
             LocateRegistry.createRegistry(1099);
 
-            // Create and bind the ServerConnection implementation
             ServerConnectionImpl serverConnection = new ServerConnectionImpl();
             Naming.rebind("Server", serverConnection);
 
