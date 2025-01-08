@@ -42,12 +42,6 @@ Contains the implementation of the Pull architecture (functional).
 
 ---
 
-## Requirements
-
-- **Java Development Kit (JDK)**: Ensure JDK 8 or higher is installed.
-
----
-
 ## How to Run the Pull Architecture (Functional Implementation)
 
 1. **Start the Server:**
