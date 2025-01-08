@@ -3,8 +3,8 @@
 ## Description
 This project consists of a chat application implemented with two different architectures:
 
-1. **Pull Architecture** (functional):
-    - Allows clients to communicate with each other through a centralized server.
+1. **Push Architecture** (functional):
+    - Enables real-time communication between clients through a centralized server using a push-based approach.
     - Fully operational.
 
 2. **Peer-to-Peer Architecture** (non-functional):
@@ -28,8 +28,8 @@ Contains the implementation of the Peer-to-Peer architecture.
     - `ServerConnection`
     - `ServerConnectionImpl`
 
-### `pull`
-Contains the implementation of the Pull architecture (functional).
+### `push`
+Contains the implementation of the Push architecture (functional).
 - **Key Classes:**
     - `Server` (entry point for the server-side application)
     - `ChatClientUI` (entry point for client-side application)
@@ -42,10 +42,10 @@ Contains the implementation of the Pull architecture (functional).
 
 ---
 
-## How to Run the Pull Architecture (Functional Implementation)
+## How to Run the Push Architecture (Functional Implementation)
 
 1. **Start the Server:**
-    - Navigate to the `pull` package and run the `Server` class.
+    - Navigate to the `push` package and run the `Server` class.
 
 2. **Start the Clients:**
     - Launch two instances of the `ChatClientUI` class.
