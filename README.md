@@ -65,13 +65,3 @@ Contains the implementation of the Pull architecture (functional).
 ## Peer-to-Peer Architecture (Non-Functional)
 
 The `peertopeer` package contains the classes for a Peer-to-Peer chat implementation. This version is incomplete and may not work as expected. You are welcome to explore and contribute to its development.
-
----
-
-## Files Included
-
-- **`module-info.java`**: Module descriptor.
-- **`.gitignore`**: Specifies intentionally untracked files.
-- **`chat-dungeon.iml`**: Project configuration file.
-- **`MiddlewareLab.pdf`**: Project-related documentation.
-- **`README.md`**: Project overview and usage instructions.
